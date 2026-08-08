@@ -33,6 +33,11 @@ jobs:
         with:
           arch: x64
 
+      - name: Prepare ThirdParty Dependencies
+        shell: cmd
+        run: |
+          python Telegram/build/prepare/prepare.py
+
       - name: Telegram Desktop build
         run: |
           cmake -B out -G "Ninja" -D TDESKTOP_API_ID=611335 -D TDESKTOP_API_HASH=d524b414d21f4d37f08684c1df41ac9c -D DESKTOP_APP_DISABLE_AUTOUPDATE=ON -D DESKTOP_APP_DISABLE_CRASH_REPORTS=ON -D DESKTOP_APP_NO_PDB=ON
