@@ -196,6 +196,7 @@ void ThemeEngine::applyBuiltinColors(BuiltinTheme t) {
         case BuiltinTheme::Minimal:      c = Palette::minimal();      break;
         case BuiltinTheme::Amoled:       c = Palette::amoled();       break;
         case BuiltinTheme::FainsDefault: c = Palette::fainsDefault(); break;
+        case BuiltinTheme::Discord:      c = Palette::discord();      break;
         default: return;
     }
     /*
@@ -281,6 +282,20 @@ Colors fainsDefault() {
         QColor(0x1f, 0x25, 0x35),  // bubble_in
         QColor(0x0c, 0x0f, 0x18),  // inputBg
         "FainsGram Default"
+    };
+}
+
+Colors discord() {
+    return {
+        QColor(0x31, 0x33, 0x38),  // background   Discord Dark (#313338)
+        QColor(0x2b, 0x2d, 0x31),  // sidebar      Discord Channel/Server List (#2b2d31)
+        QColor(0x58, 0x65, 0xf2),  // accent       Discord Blurple (#5865f2)
+        QColor(0xf2, 0xf3, 0xf5),  // text         Discord White (#f2f3f5)
+        QColor(0x94, 0x9b, 0xa4),  // textSecondary Discord Muted Text (#949ba4)
+        QColor(0x38, 0x3a, 0x40),  // bubble_out   Discord Bubble Out (#383a40)
+        QColor(0x2e, 0x30, 0x35),  // bubble_in    Discord Bubble In (#2e3035)
+        QColor(0x38, 0x3a, 0x40),  // inputBg      Discord Input Box (#383a40)
+        "Discord"
     };
 }
 

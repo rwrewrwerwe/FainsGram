@@ -26,11 +26,12 @@ enum class BuiltinTheme {
     Neon,        // Black + electric purple/green neon
     Minimal,     // Off-white, clean, minimal
     Amoled,      // Pure #000000 background for OLED screens
-    FainsDefault // FainsGram branded dark theme
+    FainsDefault,// FainsGram branded dark theme
+    Discord      // Discord Dark Blurple theme (#313338 / #5865f2)
 };
 
 struct ThemeSettings {
-    BuiltinTheme builtinTheme  = BuiltinTheme::FainsDefault;
+    BuiltinTheme builtinTheme  = BuiltinTheme::Discord;
     QString      wallpaperPath;      // Custom wallpaper file path
     bool         wallpaperBlur  = false;
     float        wallpaperOpacity = 0.8f;
@@ -111,6 +112,7 @@ Colors neon();
 Colors minimal();
 Colors amoled();
 Colors fainsDefault();
+Colors discord();
 
 } // namespace Palette
 } // namespace FainsGram

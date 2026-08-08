@@ -990,16 +990,6 @@ void ShowFiltersCategoryBox(not_null<Window::SessionController*> controller) {
         container->add(object_ptr<Settings::Button>(
             container, rpl::single(QString("Permanent Stories Vault")), st::settingsButtonNoIcon
         ))->toggleOn(rpl::single(true));
-
-        Ui::AddSkip(container);
-
-        auto exportBtn = container->add(object_ptr<Settings::Button>(
-            container, rpl::single(QString("Sync Vault to macOS iCloud Drive")), st::settingsButtonNoIcon
-        ));
-        exportBtn->setClickedCallback([=] {
-            FainsGramController::instance().vault()->exportToiCloudIfEnabled();
-            QMessageBox::information(nullptr, "iCloud Vault", "Vault synced to iCloud Drive successfully!");
-        });
     }));
 }
 
@@ -1029,7 +1019,7 @@ void ShowGeneralCategoryBox(not_null<Window::SessionController*> controller) {
 void ShowAppearanceCategoryBox(not_null<Window::SessionController*> controller) {
     controller->show(Box([=](not_null<Ui::GenericBox*> box) {
         box->setStyle(st::boostBox);
-        box->setWidth(400);
+        box->setWidth(540);
         box->setTitle(rpl::single(QString("Appearance")));
         box->addButton(tr::lng_close(), [=] { box->closeBox(); });
         box->setCloseByEscape(true);
@@ -1037,6 +1027,20 @@ void ShowAppearanceCategoryBox(not_null<Window::SessionController*> controller) 
 
         auto container = box->verticalLayout();
         auto* theme = FainsGramController::instance().theme();
+
+        // --- Theme Presets ---
+        Ui::AddSubsectionTitle(container, rpl::single(QString("Theme Presets")));
+
+        auto discordBtn = container->add(object_ptr<Settings::Button>(
+            container, rpl::single(QString("Apply Discord Theme  (#313338 / Blurple)")), st::settingsButtonNoIcon
+        ));
+        discordBtn->setClickedCallback([=] {
+            if (theme) theme->applyBuiltinTheme(BuiltinTheme::Discord);
+            QMessageBox::information(nullptr, "Discord Theme", "Discord Dark Blurple theme applied successfully!");
+        });
+
+        Ui::AddDivider(container);
+        Ui::AddSkip(container);
 
         // --- Profile ---
         Ui::AddSubsectionTitle(container, rpl::single(QString("Profile")));
@@ -1256,11 +1260,6 @@ void ShowSettingsBox(not_null<Window::SessionController*> controller) {
         Settings::AddButtonWithIcon(
             container, rpl::single(QString("Chats")), st::settingsButtonNoIcon
         )->setClickedCallback([=] { ShowChatsCategoryBox(controller); });
-
-        // 6. Other
-        Settings::AddButtonWithIcon(
-            container, rpl::single(QString("Other")), st::settingsButtonNoIcon
-        )->setClickedCallback([=] { ShowOtherCategoryBox(controller); });
 
         Ui::AddDivider(container);
         Ui::AddSkip(container);
