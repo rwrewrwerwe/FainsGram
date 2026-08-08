@@ -25,7 +25,7 @@
 
 namespace FainsGram {
 
-enum class VaultMessageType { Deleted = 0, Disappearing = 1, Edited = 2 };
+enum class VaultMessageType { Deleted = 0, Disappearing = 1, Edited = 2, Story = 3 };
 
 struct VaultMessage {
     qint64          id        = 0;

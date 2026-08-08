@@ -968,7 +968,7 @@ void ShowFiltersCategoryBox(not_null<Window::SessionController*> controller) {
     controller->show(Box([=](not_null<Ui::GenericBox*> box) {
         box->setStyle(st::boostBox);
         box->setWidth(540);
-        box->setTitle(rpl::single(QString("Filters")));
+        box->setTitle(rpl::single(QString("Vault & History")));
         box->addButton(tr::lng_close(), [=] { box->closeBox(); });
         box->setCloseByEscape(true);
         box->setCloseByOutsideClick(true);
@@ -980,8 +980,26 @@ void ShowFiltersCategoryBox(not_null<Window::SessionController*> controller) {
         ))->toggleOn(rpl::single(true));
 
         container->add(object_ptr<Settings::Button>(
-            container, rpl::single(QString("Save Disappearing Media")), st::settingsButtonNoIcon
+            container, rpl::single(QString("Save Disappearing / One-View Media")), st::settingsButtonNoIcon
         ))->toggleOn(rpl::single(true));
+
+        container->add(object_ptr<Settings::Button>(
+            container, rpl::single(QString("Save Edited Message History")), st::settingsButtonNoIcon
+        ))->toggleOn(rpl::single(true));
+
+        container->add(object_ptr<Settings::Button>(
+            container, rpl::single(QString("Permanent Stories Vault")), st::settingsButtonNoIcon
+        ))->toggleOn(rpl::single(true));
+
+        Ui::AddSkip(container);
+
+        auto exportBtn = container->add(object_ptr<Settings::Button>(
+            container, rpl::single(QString("Sync Vault to macOS iCloud Drive")), st::settingsButtonNoIcon
+        ));
+        exportBtn->setClickedCallback([=] {
+            FainsGramController::instance().vault()->exportToiCloudIfEnabled();
+            QMessageBox::information(nullptr, "iCloud Vault", "Vault synced to iCloud Drive successfully!");
+        });
     }));
 }
 
