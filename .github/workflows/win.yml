@@ -20,6 +20,14 @@ jobs:
           git config --global url."https://github.com/".insteadOf "git@github.com:"
           git submodule update --init --recursive
 
+      - name: Setup Qt 6
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.5.3'
+          host: 'windows'
+          target: 'desktop'
+          arch: 'win64_msvc2019_64'
+
       - name: Setup MSVC C++ Build Environment
         uses: ilammy/msvc-dev-cmd@v1.13.0
         with:
