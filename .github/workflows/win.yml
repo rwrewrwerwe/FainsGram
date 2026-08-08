@@ -20,6 +20,9 @@ jobs:
           git config --global url."https://github.com/".insteadOf "git@github.com:"
           git submodule update --init --recursive
 
+      - name: Setup NASM
+        uses: ilammy/setup-nasm@v1
+
       - name: Setup Qt 6
         uses: jurplel/install-qt-action@v4
         with:
@@ -35,6 +38,8 @@ jobs:
 
       - name: Prepare ThirdParty Dependencies
         shell: cmd
+        env:
+          CMAKE_POLICY_VERSION_MINIMUM: "3.5"
         run: |
           python Telegram/build/prepare/prepare.py
 
