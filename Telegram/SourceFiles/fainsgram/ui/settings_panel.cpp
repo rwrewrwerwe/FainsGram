@@ -1028,20 +1028,6 @@ void ShowAppearanceCategoryBox(not_null<Window::SessionController*> controller) 
         auto container = box->verticalLayout();
         auto* theme = FainsGramController::instance().theme();
 
-        // --- Theme Presets ---
-        Ui::AddSubsectionTitle(container, rpl::single(QString("Theme Presets")));
-
-        auto discordBtn = container->add(object_ptr<Settings::Button>(
-            container, rpl::single(QString("Apply Discord Theme  (#313338 / Blurple)")), st::settingsButtonNoIcon
-        ));
-        discordBtn->setClickedCallback([=] {
-            if (theme) theme->applyBuiltinTheme(BuiltinTheme::Discord);
-            QMessageBox::information(nullptr, "Discord Theme", "Discord Dark Blurple theme applied successfully!");
-        });
-
-        Ui::AddDivider(container);
-        Ui::AddSkip(container);
-
         // --- Profile ---
         Ui::AddSubsectionTitle(container, rpl::single(QString("Profile")));
 
