@@ -1,53 +1,18 @@
-name: Windows.
+name: Windows
 
 on:
   push:
-    paths-ignore:
-      - 'docs/**'
-      - '**.md'
-      - 'changelog.txt'
-      - 'LEGAL'
-      - 'LICENSE'
-      - '.github/**'
-      - '!.github/workflows/win.yml'
-      - 'lib/xdg/**'
-      - 'snap/**'
-      - 'Telegram/build/docker/**'
-      - 'Telegram/Resources/uwp/**'
-      - 'Telegram/SourceFiles/platform/linux/**'
-      - 'Telegram/SourceFiles/platform/mac/**'
-      - 'Telegram/Telegram/**'
-      - 'Telegram/configure.sh'
-      - 'Telegram/Telegram.plist'
-  pull_request:
-    paths-ignore:
-      - 'docs/**'
-      - '**.md'
-      - 'changelog.txt'
-      - 'LEGAL'
-      - 'LICENSE'
-      - '.github/**'
-      - '!.github/workflows/win.yml'
-      - 'lib/xdg/**'
-      - 'snap/**'
-      - 'Telegram/build/docker/**'
-      - 'Telegram/Resources/uwp/**'
-      - 'Telegram/SourceFiles/platform/linux/**'
-      - 'Telegram/SourceFiles/platform/mac/**'
-      - 'Telegram/Telegram/**'
-      - 'Telegram/configure.sh'
-      - 'Telegram/Telegram.plist'
+    branches: [ main, fainsgram_release ]
+  workflow_dispatch:
 
 jobs:
-
   windows:
-    name: Windows
+    name: Windows x64
     runs-on: windows-latest
 
     strategy:
       matrix:
-        arch: [Win32, x64]
-        generator: ["", "Ninja Multi-Config"]
+        arch: [x64]
 
     env:
       UPLOAD_ARTIFACT: "true"
@@ -84,8 +49,6 @@ jobs:
         shell: bash
         run: |
           echo "CACHE_KEY=$(sha256sum $TBUILD/$REPO_NAME/$PREPARE_PATH | awk '{ print $1 }')" >> $GITHUB_ENV
-
-          echo "Configurate git for cherry-picks."
           git config --global user.email "you@example.com"
           git config --global user.name "Sample"
 
@@ -118,84 +81,21 @@ jobs:
           cd %TBUILD%
           %REPO_NAME%\Telegram\build\prepare\win.bat skip-release silent
 
-      - name: Read configuration matrix.
-        shell: bash
-        run: |
-          ARTIFACT_NAME="Telegram"
-
-          ARCH=""
-          if [ -n "${{ matrix.arch }}" ]; then
-            case "${{ matrix.arch }}" in
-              Win32) ARCH="x86";;
-              *) ARCH="${{ matrix.arch }}";;
-            esac
-            echo "Architecture from matrix: $ARCH"
-            ARTIFACT_NAME="${ARTIFACT_NAME}_${{ matrix.arch }}"
-          fi
-
-          GENERATOR=""
-          if [ -n "${{ matrix.generator }}" ]; then
-            GENERATOR="-G \"${{ matrix.generator }}\""
-            echo "Generator from matrix: $GENERATOR"
-            ARTIFACT_NAME="${ARTIFACT_NAME}_${{ matrix.generator }}"
-          fi
-          echo "TDESKTOP_BUILD_GENERATOR=$GENERATOR" >> $GITHUB_ENV
-
-          [ -n "$GENERATOR" ] && ARCH=""
-          echo "TDESKTOP_BUILD_ARCH=$ARCH" >> $GITHUB_ENV
-
-          DEFINE=""
-          if [ -n "${{ matrix.defines }}" ]; then
-            DEFINE="-D ${{ matrix.defines }}=ON"
-            echo "Define from matrix: $DEFINE"
-            ARTIFACT_NAME="${ARTIFACT_NAME}_${{ matrix.defines }}"
-          fi
-          echo "TDESKTOP_BUILD_DEFINE=$DEFINE" >> $GITHUB_ENV
-
-          echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> $GITHUB_ENV
-
-          API="-D TDESKTOP_API_TEST=ON"
-          if [ $GITHUB_REF == 'refs/heads/nightly' ]; then
-            echo "Use the open credentials."
-            API="-D TDESKTOP_API_ID=611335 -D TDESKTOP_API_HASH=d524b414d21f4d37f08684c1df41ac9c"
-          fi
-          echo "TDESKTOP_BUILD_API=$API" >> $GITHUB_ENV
-
-      - name: Free up some disk space.
-        run: |
-          cd %TBUILD%
-          del /S Libraries\*.pdb
-          del /S Libraries\*.pch
-          del /S Libraries\*.obj
-
       - name: Telegram Desktop build.
-        if: env.ONLY_CACHE == 'false'
         run: |
           cd %TBUILD%\%REPO_NAME%\Telegram
-
-          call configure.bat ^
-          %TDESKTOP_BUILD_GENERATOR% ^
-          %TDESKTOP_BUILD_ARCH% ^
-          %TDESKTOP_BUILD_API% ^
-          -D CMAKE_C_FLAGS="/WX" ^
-          -D CMAKE_CXX_FLAGS="/WX" ^
-          -D DESKTOP_APP_DISABLE_AUTOUPDATE=OFF ^
-          -D DESKTOP_APP_DISABLE_CRASH_REPORTS=OFF ^
-          -D DESKTOP_APP_NO_PDB=ON ^
-          %TDESKTOP_BUILD_DEFINE%
-
-          cmake --build ..\out --config Debug --parallel
+          call configure.bat x64 -D TDESKTOP_API_ID=611335 -D TDESKTOP_API_HASH=d524b414d21f4d37f08684c1df41ac9c -D DESKTOP_APP_DISABLE_AUTOUPDATE=ON -D DESKTOP_APP_DISABLE_CRASH_REPORTS=ON -D DESKTOP_APP_NO_PDB=ON
+          cmake --build ..\out --config Release --parallel
 
       - name: Move artifact.
-        if: (env.UPLOAD_ARTIFACT == 'true') || (github.ref == 'refs/heads/nightly')
         run: |
-          set OUT=%TBUILD%\%REPO_NAME%\out\Debug
+          set OUT=%TBUILD%\%REPO_NAME%\out\Release
           mkdir artifact
-          move %OUT%\Telegram.exe artifact/
-          move %OUT%\Updater.exe artifact/
+          if exist %OUT%\Telegram.exe move %OUT%\Telegram.exe artifact\FainsGram.exe
+          if exist %OUT%\FainsGram.exe move %OUT%\FainsGram.exe artifact\FainsGram.exe
+
       - uses: actions/upload-artifact@v4
         name: Upload artifact.
-        if: (env.UPLOAD_ARTIFACT == 'true') || (github.ref == 'refs/heads/nightly')
         with:
-          name: ${{ env.ARTIFACT_NAME }}
+          name: FainsGram_Windows_x64
           path: artifact\
