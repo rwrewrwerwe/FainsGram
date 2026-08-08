@@ -13,8 +13,12 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
+
+      - name: Configure Git for SSH submodules
+        shell: bash
+        run: |
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
+          git submodule update --init --recursive
 
       - name: Setup MSVC C++ Build Environment
         uses: ilammy/msvc-dev-cmd@v1.13.0
