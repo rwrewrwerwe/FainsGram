@@ -228,11 +228,14 @@ void FainsGramSettingsPanel::buildHeader() {
     auto* ghostLabel = new QLabel("Ghost");
     ghostLabel->setStyleSheet("font-size: 11px; color: #707890; background:transparent;");
     auto* ghostToggle = new ToggleSwitch;
-    if (FG().isInitialized() && FG().ghost()) {
-        ghostToggle->setChecked(FG().ghost()->isEnabled());
+    // Capture the pointer once and null-guard every deref. FG().ghost() can
+    // return nullptr before the controller finishes lazy initialization, and a
+    // non-null-but-stale pointer would fault on ->isEnabled() (EXC_BAD_ACCESS).
+    if (auto* ghost = FG().ghost()) {
+        ghostToggle->setChecked(ghost->isEnabled());
         connect(ghostToggle, &ToggleSwitch::toggled,
-                [](bool on){ if (FG().ghost()) FG().ghost()->setEnabled(on); });
-        connect(FG().ghost(), &GhostController::ghostModeChanged,
+                [ghost](bool on){ ghost->setEnabled(on); });
+        connect(ghost, &GhostController::ghostModeChanged,
                 ghostToggle, &ToggleSwitch::setChecked);
     }
 

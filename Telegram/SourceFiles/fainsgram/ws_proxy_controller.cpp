@@ -171,6 +171,13 @@ void WsProxyController::stopProxy() {
 void WsProxyController::applyTelegramProxy(bool enable) {
     auto& proxy = Core::App().settings().proxy();
 
+    // IMPORTANT: never mutate proxy.list() from here. The MTP network threads
+    // hold references into that very vector (AbstractConnection stores the
+    // proxy by reference, and ResolvingConnection keeps it across async DNS),
+    // so reallocating it (push_back / erase / in-place reassignment) corrupts
+    // the host QString and crashes in MTP::ProxyData::tryCustomResolve.
+    // The connection path actually consumes proxy.selected(), which stores its
+    // own copy — so selecting it here is sufficient and race-free.
     if (enable) {
         MTP::ProxyData d;
         d.type  = MTP::ProxyData::Type::Mtproto;
@@ -178,31 +185,12 @@ void WsProxyController::applyTelegramProxy(bool enable) {
         d.port  = uint32_t(_port);
         d.password = "dd" + _secret;   // dd = default MTProto secret prefix
 
-        auto& list = proxy.list();
-        bool found = false;
-        for (auto& p : list) {
-            if (p.type == MTP::ProxyData::Type::Mtproto
-                && p.host == "127.0.0.1"
-                && p.port == uint32_t(_port)) {
-                p = d;
-                found = true;
-                break;
-            }
-        }
-        if (!found) list.push_back(d);
-
         proxy.setSelected(d);
         proxy.setSettings(MTP::ProxyData::Settings::Enabled);
         proxy.connectionTypeChangesNotify();
         _status = QString("Running · proxy active on 127.0.0.1:%1").arg(_port);
         Q_EMIT statusChanged(_status);
     } else {
-        auto& list = proxy.list();
-        list.erase(std::remove_if(list.begin(), list.end(),
-            [](const MTP::ProxyData& p) {
-                return p.type == MTP::ProxyData::Type::Mtproto
-                    && p.host == "127.0.0.1";
-            }), list.end());
         proxy.setSettings(MTP::ProxyData::Settings::System);
         proxy.connectionTypeChangesNotify();
     }
