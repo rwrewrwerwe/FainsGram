@@ -27,20 +27,25 @@
 #include "../theme_engine.h"
 #include "../custom_badge.h"
 #include "../multi_account_manager.h"
+#include "../ws_proxy_controller.h"
 
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QMessageBox>
+#include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QSpinBox>
 #include <QtWidgets/QFontComboBox>
 #include <QtWidgets/QColorDialog>
 #include <QtWidgets/QListWidget>
 #include <QtWidgets/QInputDialog>
+#include <QtWidgets/QPushButton>
+#include <QtWidgets/QApplication>
 #include <QtGui/QPainter>
 #include <QtGui/QPainterPath>
 #include <QtGui/QLinearGradient>
 #include <QtCore/QEasingCurve>
 #include <QtGui/QDesktopServices>
 #include <QtCore/QUrl>
+#include <QtCore/QRandomGenerator>
 
 namespace FainsGram {
 
@@ -1074,61 +1079,6 @@ void ShowAppearanceCategoryBox(not_null<Window::SessionController*> controller) 
             }
         });
 
-        Ui::AddDivider(container);
-        Ui::AddSkip(container);
-
-        // --- Custom Font ---
-        Ui::AddSubsectionTitle(container, rpl::single(QString("Custom Font")));
-
-        auto fontInput = container->add(
-            object_ptr<Ui::InputField>(
-                container, st::defaultInputField,
-                rpl::single(QString("Font family name  (e.g. Inter)")),
-                theme ? theme->settings().fontFamily : QString()
-            ),
-            st::boxRowPadding
-        );
-        Ui::AddSkip(container);
-
-        auto applyFontBtn = container->add(object_ptr<Settings::Button>(
-            container, rpl::single(QString("Apply Font")), st::settingsButtonNoIcon
-        ));
-        applyFontBtn->setClickedCallback([=] {
-            const QString family = fontInput->getLastText().trimmed();
-            if (theme && !family.isEmpty()) theme->setCustomFont(family);
-        });
-
-        auto loadFontBtn = container->add(object_ptr<Settings::Button>(
-            container, rpl::single(QString("Load Font File  (.ttf / .otf)")), st::settingsButtonNoIcon
-        ));
-        loadFontBtn->setClickedCallback([=] {
-            QString path = QFileDialog::getOpenFileName(
-                nullptr, "Load Font File", QDir::homePath(), "Fonts (*.ttf *.otf)");
-            if (!path.isEmpty() && theme) theme->setCustomFontFile(path);
-        });
-
-        Ui::AddDivider(container);
-        Ui::AddSkip(container);
-
-        // --- App Icon (macOS) ---
-        Ui::AddSubsectionTitle(container, rpl::single(QString("App Icon  (macOS)")));
-
-        auto setIconBtn = container->add(object_ptr<Settings::Button>(
-            container, rpl::single(QString("Set Custom Icon  (.icns / .png)")), st::settingsButtonNoIcon
-        ));
-        setIconBtn->setClickedCallback([=] {
-            QString path = QFileDialog::getOpenFileName(
-                nullptr, "Choose Icon", QDir::homePath(), "Icons (*.icns *.png)");
-            if (!path.isEmpty() && theme) theme->setAppIcon(path);
-        });
-
-        auto resetIconBtn = container->add(object_ptr<Settings::Button>(
-            container, rpl::single(QString("Reset to Default Icon")), st::settingsButtonNoIcon
-        ));
-        resetIconBtn->setClickedCallback([=] {
-            if (theme) theme->setAppIcon(QString());
-        });
-
         Ui::AddSkip(container);
     }));
 }
@@ -1169,6 +1119,113 @@ void ShowOtherCategoryBox(not_null<Window::SessionController*> controller) {
         container->add(object_ptr<Settings::Button>(
             container, rpl::single(QString("Local Storage Encryption")), st::settingsButtonNoIcon
         ))->toggleOn(rpl::single(true));
+    }));
+}
+
+void ShowProxyCategoryBox(not_null<Window::SessionController*> controller) {
+    controller->show(Box([=](not_null<Ui::GenericBox*> box) {
+        box->setStyle(st::boostBox);
+        box->setWidth(540);
+        box->setTitle(rpl::single(QString("Proxy (TG WS Proxy)")));
+        box->addButton(tr::lng_close(), [=] { box->closeBox(); });
+        box->setCloseByEscape(true);
+        box->setCloseByOutsideClick(true);
+
+        auto container = box->verticalLayout();
+        auto* ws = FainsGramController::instance().wsproxy();
+
+        // ── Master enable/disable toggle ────────────────────────────────────────
+        auto enable = container->add(object_ptr<Settings::Button>(
+            container, rpl::single(QString("Enable local MTProto proxy")), st::settingsButtonNoIcon
+        ))->toggleOn(rpl::single(ws->isEnabled()));
+        enable->toggledValue() | rpl::start_with_next([=](bool on) {
+            ws->setEnabled(on);
+        }, box->lifetime());
+
+        Ui::AddDivider(container);
+        Ui::AddSkip(container);
+
+        // ── Live status ─────────────────────────────────────────────────────────
+        Ui::AddSubsectionTitle(container, rpl::single(QString("Status")));
+        auto* statusLabel = container->add(
+            object_ptr<Ui::FlatLabel>(container, ws->statusText(), st::defaultFlatLabel),
+            style::margins(22, 0, 22, 8));
+        QObject::connect(ws, &WsProxyController::statusChanged, statusLabel,
+            [statusLabel](const QString& t) { statusLabel->setText(t); });
+
+        Ui::AddSkip(container);
+
+        // ── Port row ────────────────────────────────────────────────────────────
+        Ui::AddSubsectionTitle(container, rpl::single(QString("Connection")));
+        {
+            auto* row = container->add(object_ptr<Ui::RpWidget>(container),
+                style::margins(22, 4, 22, 4));
+            auto* hl = new QHBoxLayout(row);
+            hl->setContentsMargins(0, 0, 0, 0);
+            auto* lbl = new QLabel("Port", row);
+            lbl->setMinimumWidth(90);
+            hl->addWidget(lbl);
+
+            auto* port = new QSpinBox(row);
+            port->setRange(1, 65535);
+            port->setValue(ws->port());
+            QObject::connect(port, QOverload<int>::of(&QSpinBox::valueChanged),
+                [=](int v) { ws->setPort(v); });
+            hl->addWidget(port);
+            hl->addStretch(1);
+        }
+
+        // ── Secret (MTProto dd key) row ─────────────────────────────────────────
+        {
+            auto* row = container->add(object_ptr<Ui::RpWidget>(container),
+                style::margins(22, 4, 22, 4));
+            auto* hl = new QHBoxLayout(row);
+            hl->setContentsMargins(0, 0, 0, 0);
+            auto* lbl = new QLabel("Secret (dd key)", row);
+            lbl->setMinimumWidth(90);
+            hl->addWidget(lbl);
+
+            auto* secret = new QLineEdit(row);
+            secret->setText(ws->secret());
+            secret->setMinimumWidth(180);
+            QObject::connect(secret, &QLineEdit::editingFinished, [=] {
+                ws->setSecret(secret->text());
+            });
+            hl->addWidget(secret);
+
+            auto* regen = new QPushButton("↻", row);
+            regen->setToolTip("Regenerate secret");
+            QObject::connect(regen, &QPushButton::clicked, [=] {
+                QByteArray raw(16, 0);
+                auto* rnd = QRandomGenerator::global();
+                for (int i = 0; i < 16; ++i) raw[i] = uint8_t(rnd->generate() & 0xFF);
+                const QString sec = QString::fromUtf8(raw.toHex());
+                ws->setSecret(sec);
+                secret->setText(sec);
+            });
+            hl->addWidget(regen);
+
+            auto* copy = new QPushButton("Copy", row);
+            QObject::connect(copy, &QPushButton::clicked, [=] {
+                QApplication::clipboard()->setText("dd" + ws->secret());
+            });
+            hl->addWidget(copy);
+        }
+
+        Ui::AddSkip(container);
+        Ui::AddDivider(container);
+        Ui::AddSkip(container);
+
+        // ── Hint ─────────────────────────────────────────────────────────────────
+        container->add(
+            object_ptr<Ui::FlatLabel>(
+                container,
+                rpl::single(QString(
+                    "When enabled, FainsGram starts a local proxy on 127.0.0.1 and "
+                    "automatically routes Telegram through it (MTProto secret \"dd\" + the key above). "
+                    "Disable to revert to the system connection.")),
+                st::defaultFlatLabel),
+            style::margins(22, 4, 22, 8));
     }));
 }
 
@@ -1246,6 +1303,11 @@ void ShowSettingsBox(not_null<Window::SessionController*> controller) {
         Settings::AddButtonWithIcon(
             container, rpl::single(QString("Chats")), st::settingsButtonNoIcon
         )->setClickedCallback([=] { ShowChatsCategoryBox(controller); });
+
+        // 6. Proxy (TG WS Proxy)
+        Settings::AddButtonWithIcon(
+            container, rpl::single(QString("Proxy (TG WS Proxy)")), st::settingsButtonNoIcon
+        )->setClickedCallback([=] { ShowProxyCategoryBox(controller); });
 
         Ui::AddDivider(container);
         Ui::AddSkip(container);

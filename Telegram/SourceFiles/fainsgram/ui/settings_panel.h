@@ -115,6 +115,7 @@ private:
 };
 
 void ShowSettingsBox(not_null<Window::SessionController*> controller);
+void ShowProxyCategoryBox(not_null<Window::SessionController*> controller);
 
 } // namespace FainsGram
 

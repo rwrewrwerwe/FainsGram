@@ -29,6 +29,7 @@ class LocalPremium;
 class ThemeEngine;
 class CustomBadge;
 class MultiAccountManager;
+class WsProxyController;
 
 // ─────────────────────────────────────────────────────────────────────────────
 class FainsGramController final : public QObject {
@@ -51,6 +52,7 @@ public:
     ThemeEngine*          theme()    const { if (!_initialized) const_cast<FainsGramController*>(this)->initialize(); return _theme.get(); }
     CustomBadge*          badge()    const { if (!_initialized) const_cast<FainsGramController*>(this)->initialize(); return _badge.get(); }
     MultiAccountManager*  accounts() const { if (!_initialized) const_cast<FainsGramController*>(this)->initialize(); return _accounts.get(); }
+    WsProxyController*     wsproxy()   const { if (!_initialized) const_cast<FainsGramController*>(this)->initialize(); return _wsproxy.get(); }
 
     // Persistent config (INI, stored in app data dir)
     QSettings& settings() { return *_settings; }
@@ -72,6 +74,7 @@ private:
     std::unique_ptr<ThemeEngine>         _theme;
     std::unique_ptr<CustomBadge>         _badge;
     std::unique_ptr<MultiAccountManager> _accounts;
+    std::unique_ptr<WsProxyController>    _wsproxy;
     std::unique_ptr<QSettings>           _settings;
 
     bool _initialized = false;

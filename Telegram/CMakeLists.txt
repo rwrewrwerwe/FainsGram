@@ -2079,6 +2079,8 @@ target_sources(Telegram PRIVATE
     SourceFiles/fainsgram/multi_account_manager.cpp
     SourceFiles/fainsgram/ui/settings_panel.h
     SourceFiles/fainsgram/ui/settings_panel.cpp
+    SourceFiles/fainsgram/ws_proxy_controller.h
+    SourceFiles/fainsgram/ws_proxy_controller.cpp
 )
 
 target_compile_definitions(Telegram PRIVATE
@@ -2107,4 +2109,24 @@ if(APPLE)
     target_link_libraries(Telegram PRIVATE /opt/homebrew/opt/openssl@3/lib/libcrypto.dylib)
     target_link_libraries(Telegram PRIVATE z)
     set_target_properties(Telegram PROPERTIES OUTPUT_NAME "FainsGram" MACOSX_BUNDLE_BUNDLE_NAME "FainsGram")
+
+    # Bundle the vendored tg-ws-proxy runtime into the .app Resources.
+    add_custom_command(TARGET Telegram POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory
+            "$<TARGET_FILE_DIR:Telegram>/../Resources/fainsgram/wsproxy"
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_CURRENT_SOURCE_DIR}/SourceFiles/fainsgram/wsproxy/tg-ws-proxy"
+            "$<TARGET_FILE_DIR:Telegram>/../Resources/fainsgram/wsproxy/tg-ws-proxy"
+        COMMENT "Bundling tg-ws-proxy runtime into FainsGram.app"
+    )
+else()
+    # Windows / Linux: copy the proxy next to the executable.
+    add_custom_command(TARGET Telegram POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory
+            "$<TARGET_FILE_DIR:Telegram>/fainsgram/wsproxy"
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_CURRENT_SOURCE_DIR}/SourceFiles/fainsgram/wsproxy/tg-ws-proxy"
+            "$<TARGET_FILE_DIR:Telegram>/fainsgram/wsproxy/tg-ws-proxy"
+        COMMENT "Bundling tg-ws-proxy runtime"
+    )
 endif()

@@ -55,6 +55,23 @@ jobs:
           if exist out\Telegram.exe move out\Telegram.exe artifact\FainsGram.exe
           if exist out\FainsGram.exe move out\FainsGram.exe artifact\FainsGram.exe
 
+      - name: Install Inno Setup
+        run: choco install innosetup -y --no-progress
+        shell: pwsh
+
+      - name: Build Windows installer (Inno Setup)
+        shell: cmd
+        run: |
+          if not exist "installer_out" mkdir "installer_out"
+          "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" ^
+            /DReleasePath="%GITHUB_WORKSPACE%\artifact" ^
+            /DReleaseOut="%GITHUB_WORKSPACE%\installer_out" ^
+            /DSourcePath="%GITHUB_WORKSPACE%\Telegram\build" ^
+            /DMyAppVersion="1.0.0" ^
+            /DMyAppVersionFull="1.0.0" ^
+            "packaging\win\fainsgram.iss"
+          move /Y "installer_out\FainsGram-x64-*.exe" "artifact\" 2>nul
+
       - uses: actions/upload-artifact@v4
         name: Upload artifact
         with:

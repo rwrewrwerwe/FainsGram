@@ -10,6 +10,7 @@
 #include "theme_engine.h"
 #include "custom_badge.h"
 #include "multi_account_manager.h"
+#include "ws_proxy_controller.h"
 
 #include <QtCore/QStandardPaths>
 #include <QtCore/QDir>
@@ -53,6 +54,7 @@ void FainsGramController::initialize() {
     _theme    = std::make_unique<ThemeEngine>(this);
     _badge    = std::make_unique<CustomBadge>(this);
     _accounts = std::make_unique<MultiAccountManager>(this);
+    _wsproxy  = std::make_unique<WsProxyController>(this);
 
     // Boot order matters
     _ghost->loadSettings();
@@ -63,6 +65,13 @@ void FainsGramController::initialize() {
     _badge->loadSettings();
     _accounts->initialize();    // Unlock account limit
     _vault->initialize();       // Open SQLite vault DB
+
+    _wsproxy->loadSettings();
+    if (_wsproxy->isEnabled()) {
+        // Defer auto-start until the event loop is up (Core::App ready).
+        WsProxyController* wp = _wsproxy.get();
+        QTimer::singleShot(0, wp, [wp] { wp->setEnabled(true); });
+    }
 
     // Periodic RAM optimization
     auto memTimer = new QTimer(this);
