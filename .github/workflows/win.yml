@@ -38,6 +38,10 @@ jobs:
         with:
           arch: x64
 
+      - name: Install Graphviz (needed by libheif doxygen)
+        run: choco install graphviz -y --no-progress
+        shell: pwsh
+
       - name: Prepare ThirdParty Dependencies
         shell: cmd
         env:
