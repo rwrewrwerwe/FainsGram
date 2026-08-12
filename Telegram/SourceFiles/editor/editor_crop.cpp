@@ -323,14 +323,18 @@ void Crop::mouseMoveEvent(QMouseEvent *e) {
 
 	const auto edge = pressedEdge ? pressedEdge : mouseState(pos);
 
-	const auto cursor = ((edge == kETL) || (edge == kEBR))
-		? style::cur_sizefdiag
+	// Use native Qt cursor shapes instead of style pixmap cursors.
+	// On macOS (Qt 6.11 + macOS 26 Tahoe) converting a pixmap cursor's QImage
+	// to a CGImage crashes inside CGColorSpaceGetType (QImage::toCGImage bug),
+	// so we stick to system cursors which never go through that path.
+	const auto shape = ((edge == kETL) || (edge == kEBR))
+		? Qt::SizeFDiagCursor
 		: ((edge == kETR) || (edge == kEBL))
-		? style::cur_sizebdiag
+		? Qt::SizeBDiagCursor
 		: (edge == kEAll)
-		? style::cur_sizeall
-		: style::cur_default;
-	setCursor(cursor);
+		? Qt::SizeAllCursor
+		: Qt::ArrowCursor;
+	setCursor(QCursor(shape));
 }
 
 style::margins Crop::cropMargins() const {
